@@ -5,10 +5,17 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
+  "keywords": [
+    "rate-limit",
+    "ratelimiter",
+    "typescript",
+    "express",
+    "fixed-window",
+    "sliding-window"
+  ],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "Lightweight TypeScript building blocks for implementing fixed-window and sliding-window rate limiting with pluggable storage backends.",
   "devDependencies": {
     "@types/express": "^5.0.6",
     "tsup": "^8.5.1",
