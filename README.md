@@ -175,7 +175,7 @@ To make it easy to define **what you are limiting**, there are small helpers for
 
 ```ts
 import { ipKey, routeKey, userKey } from "ratelimiter-ts";
-``>
+```
 
 - **`ipKey(req)`** → returns the IP from `req.ip` (fallback `"unknown-ip"`).
 - **`routeKey(req)`** → returns `"METHOD:/path"` for the current route.
@@ -521,6 +521,24 @@ You can then drop `RedisStore` into exactly the same middleware shape as the `Me
 - `src/events/emitter.ts` – typed event emitter and `RateLimitEvent` payload.
 - `src/types/https.ts` – minimal HTTP request/response types and middleware helpers.
 - `src/index.ts` – package entry point re‑exporting the public API.
+
+---
+
+### Testing
+
+- This project uses **Vitest** for unit tests.
+- Core behaviour is covered by tests under `test/`, including:
+  - algorithms (`fixed-window`, `sliding-window`),
+  - the `Ratelimiter` orchestration class and events,
+  - key helpers (`ipKey`, `routeKey`, `userKey`),
+  - the in‑memory store (`MemoryStore`),
+  - and the Express adapter plus public API surface.
+
+Run the test suite with:
+
+```bash
+npm test
+```
 
 ---
 
