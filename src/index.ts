@@ -1,10 +1,10 @@
 export * from "./core/result";
 export * from "./stores/store.interface";
 export * from "./stores/memory.store";
-
 export * from "./algorithms/fixed-window";
 export * from "./algorithms/sliding-window";
-
 export * from "./keys/ip.key";
 export * from "./keys/route.key";
 export * from "./keys/user.key";
+export * from "./core/limiter";
+export * from "./adapters/express";

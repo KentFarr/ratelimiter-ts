@@ -1,9 +1,20 @@
 {
   "name": "ratelimiter-ts",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+        "types": "./dist/index.d.ts",
+        "require": "./dist/index.js",
+        "import": "./dist/index.mjs"
+    }
+},
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest",
+    "build": "tsup",
+    "dev": "tsup --watch"
   },
   "keywords": [
     "rate-limit",
@@ -13,7 +24,7 @@
     "fixed-window",
     "sliding-window"
   ],
-  "author": "",
+  "author": "Kent Farabaugh",
   "license": "ISC",
   "description": "Lightweight TypeScript building blocks for implementing fixed-window and sliding-window rate limiting with pluggable storage backends.",
   "devDependencies": {
@@ -23,6 +34,8 @@
     "vitest": "^4.0.18"
   },
   "dependencies": {
+  },
+  "peerDependencies": {
     "express": "^5.2.1"
-  }
+}
 }

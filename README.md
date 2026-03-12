@@ -148,6 +148,50 @@ import { ipKey, routeKey, userKey } from "ratelimiter-ts";
 
 You can freely compose these or write your own functions to derive keys that make sense for your domain.
 
+#### 5. Ratelimiter orchestration class
+
+On top of the low‑level primitives, the library provides a small orchestrator:
+
+```ts
+import { Ratelimiter, type RatelimiterConfig } from "ratelimiter-ts";
+```
+
+- **`Ratelimiter`**: ties together an algorithm, key function, and store.
+- **`RatelimiterConfig`**: configuration object describing how the limiter should behave.
+
+The `Ratelimiter.check(req)` method:
+
+- derives the key from the request,
+- loads historical timestamps from the store,
+- runs the configured algorithm,
+- persists the new timestamp when permitted,
+- emits rich events (see below),
+- and returns a `LimitResult`.
+
+#### 6. Events
+
+The limiter is also an `EventEmitter` that exposes structured telemetry via
+`RateLimitEvent`:
+
+```ts
+import { type RateLimitEvent } from "ratelimiter-ts";
+```
+
+You can subscribe to three semantic events on a `Ratelimiter` instance:
+
+- **`"limit:reached"`** – fired when a request is rejected.
+- **`"limit:warning"`** – fired when usage crosses a high‑water mark (80%+).
+- **`"request:checked"`** – fired for every evaluation (allowed or rejected).
+
+Each handler receives a `RateLimitEvent` with:
+
+- `key` – logical identifier being limited.
+- `route` – request path as observed by the limiter.
+- `limit` – configured maximum for the window.
+- `remaining` – remaining requests in the window.
+- `resetTime` – epoch ms when the window resets.
+- `percentUsed` – derived percentage of the limit consumed.
+
 ---
 
 ### Putting it together: Express example
@@ -238,6 +282,48 @@ This is intentionally straightforward and explicit so you can tailor it to:
 - Use `fixedWindow` instead of `slidingWindow`.
 - Limit per IP (`ipKey`) or per route (`routeKey`) instead of per user.
 - Swap `MemoryStore` for a Redis‑backed implementation.
+---
+
+### Using the high‑level `Ratelimiter` with Express
+
+The package also exports a tiny Express‑style adapter built on top of the
+`Ratelimiter` class and the key helpers.
+
+```ts
+import express from "express";
+import {
+  MemoryStore,
+  fixedWindow,
+  ipKey,
+  Ratelimiter,
+  expressAdapter,
+} from "ratelimiter-ts";
+
+const app = express();
+
+const limiter = new Ratelimiter({
+  algorithm: fixedWindow,
+  key: ipKey,
+  limit: 100,
+  windowMs: 60_000,
+  store: new MemoryStore(),
+});
+
+// Optional: subscribe to telemetry events
+limiter.on("limit:reached", (event) => {
+  console.warn("Rate limit reached", event);
+});
+
+// Attach as Express middleware
+app.use(expressAdapter(limiter));
+
+app.get("/hello", (_req, res) => {
+  res.json({ message: "Hello, world!" });
+});
+```
+
+This hides the bookkeeping (loading/saving timestamps, emitting events) while
+still letting you configure the algorithm, store, and key strategy.
 
 ---
 
@@ -309,6 +395,39 @@ You can then drop `RedisStore` into exactly the same middleware shape as the `Me
   - `set(key: string, value: number[]): Promise<void>`
   - `delete(key: string): Promise<void>`
 
+#### Core
+
+- **`Ratelimiter`**
+  - High‑level rate limiter that composes an algorithm, key function, and store.
+  - Extends `RateLimitEventEmitter` so you can subscribe to `"limit:reached"`,
+    `"limit:warning"`, and `"request:checked"` events.
+
+- **`RatelimiterConfig`**
+  - Configuration object for `Ratelimiter`.
+  - Fields:
+    - `algorithm: (timestamps: number[], limit: number, key: string, windowMs: number) => LimitResult`
+    - `key: (req: HttpRequest) => string`
+    - `limit: number`
+    - `windowMs: number`
+    - `store: StoreInterface`
+
+#### Events
+
+- **`RateLimitEvent`**
+  - `key: string`
+  - `route: string`
+  - `limit: number`
+  - `remaining: number`
+  - `resetTime: number`
+  - `percentUsed: number`
+
+- **`RateLimitEventEmitter`**
+  - Thin typed wrapper over Node's `EventEmitter`.
+  - Methods:
+    - `emitLimitReached(event: RateLimitEvent): void`
+    - `emitLimitWarning(event: RateLimitEvent): void`
+    - `emitRequestChecked(event: RateLimitEvent): void`
+
 #### Stores
 
 - **`MemoryStore`**
@@ -331,6 +450,25 @@ You can then drop `RedisStore` into exactly the same middleware shape as the `Me
   - Returns its string value or `"unknown-user"`.
   - Good for API key, user ID, or authorization‑token based limits.
 
+#### HTTP Types / Adapter
+
+- **`HttpRequest`**
+  - Minimal framework‑agnostic request shape used by the core limiter.
+  - Contains `ip?`, `path`, `method`, and `headers`.
+
+- **`HttpResponse`**
+  - Minimal response surface (`status`, `json`) required by the Express adapter.
+
+- **`NextFunction`**
+  - Continuation function in middleware chains.
+
+- **`RequestHandler`**
+  - Generic middleware signature built from the above types.
+
+- **`expressAdapter(limiter: Ratelimiter): RequestHandler`**
+  - Wraps a `Ratelimiter` instance as an Express‑style middleware.
+  - Responds with HTTP 429 when the request is over the limit, otherwise calls `next()`.
+
 ---
 
 ### Project Layout
@@ -343,6 +481,9 @@ You can then drop `RedisStore` into exactly the same middleware shape as the `Me
 - `src/keys/ip.key.ts` – IP‑based key helper.
 - `src/keys/route.key.ts` – route‑based key helper.
 - `src/keys/user.key.ts` – header‑based user key helper.
+- `src/core/limiter.ts` – orchestration class and configuration for rate limiting.
+- `src/events/emitter.ts` – typed event emitter and `RateLimitEvent` payload.
+- `src/types/https.ts` – minimal HTTP request/response types and middleware helpers.
 - `src/index.ts` – package entry point re‑exporting the public API.
 
 ---

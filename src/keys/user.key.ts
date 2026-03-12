@@ -1,4 +1,4 @@
-import { Request } from "express";
+import type { HttpRequest } from "../types/https";
 
 /**
  * Factory for a key–derivation strategy based on a request header.
@@ -8,10 +8,10 @@ import { Request } from "express";
  * is returned to keep the key space well–defined.
  *
  * @param headerName - Name of the header to read (case–insensitive).
- * @returns A function that maps an Express request to a user key.
+ * @returns A function that maps an HTTP request to a user key.
  */
-export function userKey(headerName: string): (req: Request) => string {
-  return function inner(req: Request): string {
+export function userKey(headerName: string): (req: HttpRequest) => string {
+  return function inner(req: HttpRequest): string {
     const raw = req.headers[headerName];
 
     if (Array.isArray(raw)) {
