@@ -1,14 +1,48 @@
 ## ratelimiter-ts
 
-`ratelimiter-ts` is a small, framework‑agnostic set of **TypeScript primitives for building rate limiters**.
+`ratelimiter-ts` is a small, framework‑agnostic library of **TypeScript building blocks for implementing HTTP rate limiting**.
 
-Instead of being a single hard‑coded middleware, this library gives you the **building blocks**:
+Instead of being a single hard‑coded middleware, this library gives you a **layered set of primitives and orchestration utilities**:
 
 - **Algorithms**: fixed‑window and sliding‑window counters.
 - **Storage abstraction**: a pluggable `StoreInterface` you can back with memory, Redis, a DB, etc.
-- **Key helpers**: helpers for deriving rate‑limit keys from Express `Request` objects (IP, route, or header‑based “user” keys).
+- **Key helpers**: helpers for deriving rate‑limit keys from HTTP requests (IP, route, or header‑based “user” keys).
+- **Limiter orchestration**: a `Ratelimiter` class that wires algorithm + key + store and emits telemetry events.
+- **Express adapter**: `expressAdapter` for dropping a configured limiter into an Express app as middleware.
 
-You combine these primitives to implement rate limiting that fits your application and infrastructure.
+You can use the low‑level primitives directly, or the higher‑level `Ratelimiter` + `expressAdapter` for a more batteries‑included experience.
+
+---
+
+### Capabilities
+
+Today this project supports:
+
+- **Two classic algorithms**
+  - Fixed‑window counter (`fixedWindow`).
+  - Sliding‑window counter (`slidingWindow`).
+
+- **Pluggable persistence**
+  - `StoreInterface` contract for timestamp storage.
+  - Built‑in `MemoryStore` for tests, demos, or single‑process apps.
+
+- **Flexible key strategies**
+  - `ipKey` for IP‑based limits.
+  - `routeKey` for per‑route limits.
+  - `userKey` for header‑driven user/API key limits.
+
+- **High‑level limiter orchestration**
+  - `Ratelimiter` combines an algorithm, key function, and store.
+  - Emits structured `RateLimitEvent` telemetry (`limit:reached`, `limit:warning`, `request:checked`).
+
+- **Express integration**
+  - `expressAdapter(limiter)` turns a `Ratelimiter` into an Express‑style middleware.
+
+What it is **not** (yet):
+
+- It does **not** ship a one‑size‑fits‑all policy engine or configuration DSL.
+- It does **not** include production‑ready Redis or SQL store implementations (a Redis sketch is provided in the docs).
+- It currently focuses on **Node.js server‑side** usage, not browsers or edge runtimes.
 
 ---
 
@@ -18,10 +52,12 @@ You combine these primitives to implement rate limiting that fits your applicati
 npm install ratelimiter-ts
 ```
 
-This package targets modern Node.js with TypeScript support. It also ships type definitions out of the box.
+This package targets modern Node.js with TypeScript support and ships:
 
-> Note: In this repo the build pipeline (e.g. `tsup` configuration) is not yet wired up. The examples below assume you either
-> compile the source yourself or consume it from TypeScript directly.
+- CommonJS and ES module builds under `dist/`.
+- Type declarations under `dist/index.d.ts`.
+
+The project uses `tsup` under the hood (`npm run build`) to produce the published artifacts.
 
 ---
 
