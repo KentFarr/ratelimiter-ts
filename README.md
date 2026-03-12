@@ -49,7 +49,7 @@ What it is **not** (yet):
 ### Installation
 
 ```bash
-npm install ratelimiter-ts
+npm install @kentfarr/ratelimiter-ts
 ```
 
 This package targets modern Node.js with TypeScript support and ships:
@@ -558,4 +558,5 @@ npm test
   - Helper builders (easier composition of key+store+algorithm).
 
 Contributions and feedback are welcome!
+
 
